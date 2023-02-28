@@ -1,15 +1,26 @@
 package com.example.shoppinglist.activities
 
+import android.annotation.SuppressLint
 import android.content.Intent
+import android.graphics.Typeface
+import android.graphics.drawable.Animatable
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.provider.ContactsContract.CommonDataKinds.Note
+import android.text.Html
+import android.text.Spannable
+import android.text.style.StyleSpan
 import android.view.Menu
 import android.view.MenuItem
+import android.view.View
+import android.view.animation.Animation
+import android.view.animation.AnimationUtils
 import com.example.shoppinglist.R
 import com.example.shoppinglist.databinding.ActivityNewNoteBinding
 import com.example.shoppinglist.entities.NoteItem
 import com.example.shoppinglist.fragments.NoteFragment
+import com.example.shoppinglist.utils.HtmlManager
+import com.example.shoppinglist.utils.MyTouchListener
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -24,6 +35,12 @@ class NewNoteActivity : AppCompatActivity() {
         setContentView(binding.root)
         actionBarSettings()
         getNote()
+        init()
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
+    private fun init(){
+        binding.colorPicker.setOnTouchListener(MyTouchListener())
     }
 
     private fun getNote(){
@@ -36,7 +53,7 @@ class NewNoteActivity : AppCompatActivity() {
 
     private fun fillNote() = with(binding){
         edTitle.setText(note?.title)
-        edDescription.setText(note?.content)
+        edDescription.setText(HtmlManager.getFromHtml(note?.content!!).trim())
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {
@@ -51,6 +68,13 @@ class NewNoteActivity : AppCompatActivity() {
         else if(item.itemId == android.R.id.home){
             finish()
         }
+        else if(item.itemId == R.id.bold){
+            setBoldForSelectedText()
+        }
+        else if(item.itemId == R.id.color){
+            if(binding.colorPicker.isShown) closeColorPicker()
+            else openColorPicker()
+        }
         return super.onOptionsItemSelected(item)
     }
 
@@ -63,7 +87,7 @@ class NewNoteActivity : AppCompatActivity() {
         return NoteItem(
             null,
             binding.edTitle.text.toString(),
-            binding.edDescription.text.toString(),
+            HtmlManager.toHtml(binding.edDescription.text),
             getCurrentTime(),
             ""
         )
@@ -95,7 +119,48 @@ class NewNoteActivity : AppCompatActivity() {
     private fun updateNote() : NoteItem? = with(binding){
         return note?.copy(
             title = edTitle.text.toString(),
-            content = edDescription.text.toString()
+            content = HtmlManager.toHtml(edDescription.text)
         )
+    }
+    private fun setBoldForSelectedText() = with(binding){
+        val startPos = edDescription.selectionStart
+        val endPos = edDescription.selectionEnd
+
+        val styles = edDescription.text.getSpans(startPos, endPos, StyleSpan::class.java)
+        var boldStyle: StyleSpan? = null
+
+        if(styles.isNotEmpty()){
+            edDescription.text.removeSpan(styles[0])
+        }
+        else{
+            boldStyle = StyleSpan(Typeface.BOLD)
+        }
+
+        edDescription.text.setSpan(boldStyle, startPos, endPos, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+        edDescription.text.trim()
+        edDescription.setSelection(startPos)
+    }
+
+    private fun openColorPicker(){
+        binding.colorPicker.visibility = View.VISIBLE
+        val openAnim = AnimationUtils.loadAnimation(this, R.anim.open_color_picker)
+        binding.colorPicker.startAnimation(openAnim)
+    }
+
+    private fun closeColorPicker(){
+        val closeAnim = AnimationUtils.loadAnimation(this, R.anim.close_color_picker)
+        closeAnim.setAnimationListener(object : Animation.AnimationListener{
+            override fun onAnimationStart(animation: Animation?) {
+            }
+
+            override fun onAnimationEnd(animation: Animation?) {
+                binding.colorPicker.visibility = View.GONE
+            }
+
+            override fun onAnimationRepeat(animation: Animation?) {
+            }
+
+        })
+        binding.colorPicker.startAnimation(closeAnim)
     }
 }
