@@ -9,6 +9,7 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     <color name="dark_red">#BD1919</color>
+    <color name="gray_back">#D3D1D1</color>
 
     <color name="picker_red">#FF1B1B</color>
     <color name="picker_blue">#174BE1</color>
